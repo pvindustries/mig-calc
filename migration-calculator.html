@@ -1,0 +1,58 @@
+<div id="migration-calculator">
+  <h3>Migration Period Calculator</h3>
+
+  <label for="fy-end">Financial year end</label>
+  <input type="date" id="fy-end">
+
+  <button onclick="calculateMigrationPeriod()">Calculate</button>
+
+  <div id="result" style="display: none;">
+    <p><strong>Migration period:</strong></p>
+    <p id="period"></p>
+  </div>
+</div>
+
+<script>
+function calculateMigrationPeriod() {
+  const input = document.getElementById("fy-end").value;
+
+  if (!input) {
+    alert("Please enter your financial year end date.");
+    return;
+  }
+
+  const fyEnd = new Date(input);
+  const today = new Date();
+
+  // The migration period starts in the calendar year
+  // that is two years before the submission year.
+  const startYear = today.getFullYear() - 2;
+
+  // The financial year starts the day after the year-end.
+  // For example:
+  // 31 March -> 1 April
+  // 31 December -> 1 January
+  let startDate = new Date(
+    startYear,
+    fyEnd.getMonth(),
+    fyEnd.getDate() + 1
+  );
+
+  // Handle 31 December correctly:
+  // 31/12 + 1 day would otherwise become 01/01 of the
+  // following year, so explicitly set the target year.
+  startDate.setFullYear(startYear);
+
+  const formatDate = date =>
+    date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric"
+    });
+
+  document.getElementById("period").textContent =
+    `${formatDate(startDate)} - ${formatDate(today)}`;
+
+  document.getElementById("result").style.display = "block";
+}
+</script>
