@@ -7,8 +7,14 @@
   <button onclick="calculateMigrationPeriod()">Calculate</button>
 
   <div id="result" style="display: none;">
-    <p><strong>Migration period:</strong></p>
-    <p id="period"></p>
+    <p>
+      <strong>Total period:</strong><br>
+      <span id="total-period"></span>
+    </p>
+
+    <p><strong>Being:</strong></p>
+
+    <div id="periods"></div>
   </div>
 </div>
 
@@ -24,34 +30,70 @@ function calculateMigrationPeriod() {
   const fyEnd = new Date(input);
   const today = new Date();
 
-  // The migration period starts in the calendar year
-  // that is two years before the submission year.
+  // Remove time component
+  today.setHours(0, 0, 0, 0);
+
+  // The migration period must start in the calendar year
+  // two years before the current calendar year.
   const startYear = today.getFullYear() - 2;
 
-  // The financial year starts the day after the year-end.
-  // For example:
-  // 31 March -> 1 April
-  // 31 December -> 1 January
-  let startDate = new Date(
+  // Financial year starts the day after the supplied year end.
+  const startDate = new Date(
     startYear,
     fyEnd.getMonth(),
     fyEnd.getDate() + 1
   );
 
-  // Handle 31 December correctly:
-  // 31/12 + 1 day would otherwise become 01/01 of the
-  // following year, so explicitly set the target year.
+  // Ensure the start date remains in the target year.
   startDate.setFullYear(startYear);
 
   const formatDate = date =>
     date.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "2-digit",
+      day: "numeric",
+      month: "long",
       year: "numeric"
     });
 
-  document.getElementById("period").textContent =
+  // Display total period
+  document.getElementById("total-period").textContent =
     `${formatDate(startDate)} - ${formatDate(today)}`;
+
+  // Build individual financial periods
+  const periodsContainer = document.getElementById("periods");
+  periodsContainer.innerHTML = "";
+
+  let periodStart = new Date(startDate);
+  let periodNumber = 1;
+
+  while (periodStart <= today) {
+
+    // The normal end of this financial period
+    const periodEnd = new Date(periodStart);
+    periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+    periodEnd.setDate(periodEnd.getDate() - 1);
+
+    // Don't allow the period to extend beyond today
+    const actualEnd = periodEnd > today ? today : periodEnd;
+
+    const period = document.createElement("p");
+
+    period.innerHTML =
+      `<strong>Period ${periodNumber}:</strong><br>
+       ${formatDate(periodStart)} - ${formatDate(actualEnd)}`;
+
+    periodsContainer.appendChild(period);
+
+    // If this period ends today, we're finished
+    if (actualEnd.getTime() === today.getTime()) {
+      break;
+    }
+
+    // Next period starts the following day
+    periodStart = new Date(actualEnd);
+    periodStart.setDate(periodStart.getDate() + 1);
+
+    periodNumber++;
+  }
 
   document.getElementById("result").style.display = "block";
 }
