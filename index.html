@@ -1,100 +1,655 @@
-<div id="migration-calculator">
-  <h3>Migration Period Calculator</h3>
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Migration Period Calculator</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      color: #152d3a;
+      background: #f2f6f7;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      --ink: #152d3a;
+      --muted: #526873;
+      --line: #d6e1e4;
+      --accent: #087d78;
+      --accent-dark: #06645f;
+      --surface: #ffffff;
+    }
 
-  <label for="fy-end">Financial year end</label>
-  <input type="date" id="fy-end">
+    * {
+      box-sizing: border-box;
+    }
 
-  <button onclick="calculateMigrationPeriod()">Calculate</button>
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      background:
+        radial-gradient(ellipse at 88% 4%, rgba(22, 148, 138, 0.09), transparent 27rem),
+        #f2f6f7;
+    }
 
-  <div id="result" style="display: none;">
-    <p>
-      <strong>Total period:</strong><br>
-      <span id="total-period"></span>
-    </p>
+    button,
+    select {
+      font: inherit;
+    }
 
-    <p><strong>Being:</strong></p>
+    .page-shell {
+      width: min(100% - 2rem, 900px);
+      margin: 0 auto;
+      padding: clamp(2.5rem, 7vw, 5.5rem) 0 3rem;
+    }
 
-    <div id="periods"></div>
-  </div>
-</div>
+    .page-heading {
+      max-width: 680px;
+      margin-bottom: 2rem;
+    }
 
-<script>
-function calculateMigrationPeriod() {
-  const input = document.getElementById("fy-end").value;
+    .eyebrow {
+      margin: 0 0 0.8rem;
+      color: var(--accent-dark);
+      font-size: 0.75rem;
+      font-weight: 750;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+    }
 
-  if (!input) {
-    alert("Please enter your financial year end date.");
-    return;
-  }
+    h1,
+    h2,
+    p {
+      margin-top: 0;
+    }
 
-  const fyEnd = new Date(input);
-  const today = new Date();
+    h1 {
+      max-width: 620px;
+      margin-bottom: 0.75rem;
+      font-size: clamp(2.2rem, 6vw, 3.4rem);
+      font-weight: 680;
+      letter-spacing: -0.055em;
+      line-height: 1.05;
+    }
 
-  // Remove time component
-  today.setHours(0, 0, 0, 0);
+    .intro {
+      max-width: 600px;
+      margin-bottom: 0;
+      color: var(--muted);
+      font-size: 1.05rem;
+      line-height: 1.65;
+    }
 
-  // The migration period must start in the calendar year
-  // two years before the current calendar year.
-  const startYear = today.getFullYear() - 2;
+    .calculator-card,
+    .results-card {
+      border: 1px solid rgba(195, 211, 215, 0.8);
+      border-radius: 18px;
+      background: var(--surface);
+      box-shadow: 0 18px 45px rgba(23, 54, 66, 0.07);
+    }
 
-  // Financial year starts the day after the supplied year end.
-  const startDate = new Date(
-    startYear,
-    fyEnd.getMonth(),
-    fyEnd.getDate() + 1
-  );
+    .calculator-card {
+      padding: clamp(1.25rem, 4vw, 2.2rem);
+    }
 
-  // Ensure the start date remains in the target year.
-  startDate.setFullYear(startYear);
+    .section-heading {
+      margin-bottom: 1.5rem;
+      font-size: 1.25rem;
+      font-weight: 650;
+      letter-spacing: -0.02em;
+    }
 
-  const formatDate = date =>
-    date.toLocaleDateString("en-GB", {
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.25rem 1.1rem;
+    }
+
+    .field {
+      min-width: 0;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 0.5rem;
+      color: #243e4b;
+      font-size: 0.9rem;
+      font-weight: 650;
+    }
+
+    .field select {
+      width: 100%;
+      min-height: 3.15rem;
+      padding: 0.75rem 2.5rem 0.75rem 0.9rem;
+      border: 1px solid #b8cbd0;
+      border-radius: 9px;
+      background-color: #fff;
+      color: var(--ink);
+      cursor: pointer;
+    }
+
+    .field select:disabled {
+      background-color: #f2f5f5;
+      color: #72868d;
+      cursor: not-allowed;
+    }
+
+    .field select:focus-visible,
+    .calculate-button:focus-visible {
+      outline: 3px solid rgba(8, 125, 120, 0.28);
+      outline-offset: 2px;
+    }
+
+    .field select[aria-invalid="true"] {
+      border-color: #b42318;
+    }
+
+    .field-hint {
+      margin: 0.45rem 0 0;
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.45;
+    }
+
+    .form-error {
+      margin: 1.1rem 0 0;
+      color: #a12820;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .form-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 1.6rem;
+    }
+
+    .calculate-button {
+      min-height: 3.1rem;
+      padding: 0.8rem 1.35rem;
+      border: 0;
+      border-radius: 9px;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      font-weight: 700;
+      transition: background-color 140ms ease, transform 140ms ease;
+    }
+
+    .calculate-button:hover {
+      background: var(--accent-dark);
+    }
+
+    .calculate-button:active {
+      transform: translateY(1px);
+    }
+
+    .results-card {
+      margin-top: 1.25rem;
+      padding: clamp(1.25rem, 4vw, 2.2rem);
+    }
+
+    .results-card[hidden],
+    .form-error[hidden] {
+      display: none;
+    }
+
+    .results-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1.35rem;
+    }
+
+    .results-header .section-heading {
+      margin-bottom: 0.35rem;
+    }
+
+    .route-summary,
+    .as-of {
+      margin-bottom: 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .as-of {
+      flex: 0 0 auto;
+      text-align: right;
+    }
+
+    .total-period {
+      padding: 1.15rem 1.25rem;
+      border-left: 4px solid var(--accent);
+      border-radius: 0 10px 10px 0;
+      background: #edf7f5;
+    }
+
+    .total-label {
+      display: block;
+      margin-bottom: 0.35rem;
+      color: var(--accent-dark);
+      font-size: 0.76rem;
+      font-weight: 750;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .total-range {
+      font-size: clamp(1.15rem, 3vw, 1.45rem);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.4;
+    }
+
+    .breakdown-heading {
+      margin: 1.6rem 0 0.8rem;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .period-list {
+      display: grid;
+      gap: 0.65rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .period-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.9rem 1rem;
+      border: 1px solid #e1e9eb;
+      border-radius: 9px;
+      background: #fff;
+      line-height: 1.5;
+    }
+
+    .period-name {
+      color: #284451;
+      font-weight: 650;
+    }
+
+    .period-dates {
+      color: var(--muted);
+      text-align: right;
+    }
+
+    .disclaimer {
+      margin: 1.25rem 0 0;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+    .page-footer {
+      margin-top: 1.25rem;
+      color: #647780;
+      font-size: 0.8rem;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 620px) {
+      .page-shell {
+        width: min(100% - 1.25rem, 900px);
+        padding-top: 2.4rem;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+
+      .results-header {
+        display: block;
+      }
+
+      .as-of {
+        margin-top: 0.6rem;
+        text-align: left;
+      }
+
+      .period-list li {
+        display: grid;
+        gap: 0.25rem;
+      }
+
+      .period-dates {
+        text-align: left;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page-shell">
+    <header class="page-heading">
+      <p class="eyebrow">Migration planning</p>
+      <h1>Migration period calculator</h1>
+      <p class="intro">Choose your country, accounting software and financial year-end month to see the default period covered by your migration.</p>
+    </header>
+
+    <section class="calculator-card" aria-labelledby="form-heading">
+      <h2 class="section-heading" id="form-heading">Your migration details</h2>
+      <form id="migration-form" novalidate>
+        <div class="form-grid">
+          <div class="field">
+            <label for="country">Country</label>
+            <select id="country" name="country" required>
+              <option value="">Select a country</option>
+              <option value="canada">Canada</option>
+              <option value="belgium">Belgium</option>
+              <option value="uk">United Kingdom</option>
+              <option value="usa">USA</option>
+              <option value="australia">Australia</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="source">Source software</label>
+            <select id="source" name="source" aria-describedby="source-hint" required disabled>
+              <option value="">Select a country first</option>
+            </select>
+            <p class="field-hint" id="source-hint">Available sources depend on your country.</p>
+          </div>
+
+          <div class="field">
+            <label for="destination">Destination software</label>
+            <select id="destination" name="destination" required disabled>
+              <option value="">Select a source first</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="year-end-month">Financial year-end month</label>
+            <select id="year-end-month" name="year-end-month" aria-describedby="year-end-hint" required>
+              <option value="">Select a month</option>
+              <option value="0">January</option>
+              <option value="1">February</option>
+              <option value="2">March</option>
+              <option value="3">April</option>
+              <option value="4">May</option>
+              <option value="5">June</option>
+              <option value="6">July</option>
+              <option value="7">August</option>
+              <option value="8">September</option>
+              <option value="9">October</option>
+              <option value="10">November</option>
+              <option value="11">December</option>
+            </select>
+            <p class="field-hint" id="year-end-hint">The year-end is treated as the last day of the selected month.</p>
+          </div>
+        </div>
+
+        <p class="form-error" id="form-error" role="alert" hidden></p>
+        <div class="form-actions">
+          <button class="calculate-button" type="submit">Calculate migration period</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="results-card" id="results" aria-labelledby="results-heading" aria-live="polite" tabindex="-1" hidden>
+      <div class="results-header">
+        <div>
+          <h2 class="section-heading" id="results-heading">Your migration period</h2>
+          <p class="route-summary" id="route-summary"></p>
+        </div>
+        <p class="as-of" id="as-of"></p>
+      </div>
+
+      <div class="total-period">
+        <span class="total-label">Total period</span>
+        <div class="total-range" id="total-range"></div>
+      </div>
+
+      <h3 class="breakdown-heading">Financial periods included</h3>
+      <ol class="period-list" id="period-list"></ol>
+      <p class="disclaimer">This shows the default migration period only. It is not a price quote.</p>
+    </section>
+
+    <footer class="page-footer">
+      The period is calculated through today's date using the local date on your device.
+    </footer>
+  </main>
+
+  <noscript>
+    <p class="page-shell">Enable JavaScript to calculate the migration period.</p>
+  </noscript>
+
+  <script>
+    const routes = [
+      { country: "uk", source: "Freshbooks", destination: "quickbooks-online", region: "UK" },
+      { country: "uk", source: "QuickBooks Desktop", destination: "quickbooks-online", region: "UK" },
+      { country: "uk", source: "Sage 50 UK", destination: "quickbooks-online", region: "UK" },
+      { country: "uk", source: "Xero", destination: "quickbooks-online", region: "UK" },
+      { country: "australia", source: "Xero", destination: "quickbooks-online", region: "Australia" },
+      {
+        country: "canada",
+        source: "Acomba",
+        destination: "quickbooks-online",
+        region: "Canada",
+        periodRule: "current-financial-year"
+      },
+      { country: "canada", source: "QuickBooks Desktop", destination: "quickbooks-online", region: "Canada" },
+      { country: "canada", source: "Sage 50 Canada", destination: "quickbooks-online", region: "Canada" },
+      { country: "canada", source: "Xero", destination: "quickbooks-online", region: "Canada" },
+      { country: "usa", source: "Xero", destination: "quickbooks-online", region: "USA" },
+      { country: "usa", source: "Sage 50 Peachtree", destination: "quickbooks-online", region: "USA" },
+      { country: "belgium", source: "Adsolut", destination: "exact", region: "Belgium" },
+      { country: "belgium", source: "Expert/M", destination: "exact", region: "Belgium" },
+      { country: "belgium", source: "Sage Bob", destination: "exact", region: "Belgium" },
+      { country: "belgium", source: "Vero Count", destination: "exact", region: "Belgium" }
+    ];
+
+    const destinationNames = {
+      "quickbooks-online": "QuickBooks Online",
+      exact: "Exact"
+    };
+
+    const form = document.getElementById("migration-form");
+    const countrySelect = document.getElementById("country");
+    const sourceSelect = document.getElementById("source");
+    const destinationSelect = document.getElementById("destination");
+    const monthSelect = document.getElementById("year-end-month");
+    const formError = document.getElementById("form-error");
+    const results = document.getElementById("results");
+    const dateFormatter = new Intl.DateTimeFormat("en-GB", {
       day: "numeric",
       month: "long",
       year: "numeric"
     });
 
-  // Display total period
-  document.getElementById("total-period").textContent =
-    `${formatDate(startDate)} - ${formatDate(today)}`;
-
-  // Build individual financial periods
-  const periodsContainer = document.getElementById("periods");
-  periodsContainer.innerHTML = "";
-
-  let periodStart = new Date(startDate);
-  let periodNumber = 1;
-
-  while (periodStart <= today) {
-
-    // The normal end of this financial period
-    const periodEnd = new Date(periodStart);
-    periodEnd.setFullYear(periodEnd.getFullYear() + 1);
-    periodEnd.setDate(periodEnd.getDate() - 1);
-
-    // Don't allow the period to extend beyond today
-    const actualEnd = periodEnd > today ? today : periodEnd;
-
-    const period = document.createElement("p");
-
-    period.innerHTML =
-      `<strong>Period ${periodNumber}:</strong><br>
-       ${formatDate(periodStart)} - ${formatDate(actualEnd)}`;
-
-    periodsContainer.appendChild(period);
-
-    // If this period ends today, we're finished
-    if (actualEnd.getTime() === today.getTime()) {
-      break;
+    function addOption(select, value, label) {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = label;
+      select.append(option);
     }
 
-    // Next period starts the following day
-    periodStart = new Date(actualEnd);
-    periodStart.setDate(periodStart.getDate() + 1);
+    function resetSelect(select, placeholder, disabled) {
+      select.replaceChildren();
+      addOption(select, "", placeholder);
+      select.value = "";
+      select.disabled = disabled;
+    }
 
-    periodNumber++;
-  }
+    function clearMessagesAndResults() {
+      formError.textContent = "";
+      formError.hidden = true;
+      for (const field of form.querySelectorAll("select")) {
+        field.removeAttribute("aria-invalid");
+      }
+      results.hidden = true;
+    }
 
-  document.getElementById("result").style.display = "block";
-}
-</script>
+    function updateSources() {
+      clearMessagesAndResults();
+      resetSelect(sourceSelect, "Select a source", true);
+      resetSelect(destinationSelect, "Select a source first", true);
+
+      if (!countrySelect.value) {
+        return;
+      }
+
+      const sources = [...new Set(
+        routes
+          .filter(route => route.country === countrySelect.value)
+          .map(route => route.source)
+      )];
+
+      for (const source of sources) {
+        addOption(sourceSelect, source, source);
+      }
+      sourceSelect.disabled = sources.length === 0;
+    }
+
+    function updateDestinations() {
+      clearMessagesAndResults();
+      resetSelect(destinationSelect, "Select a destination", true);
+
+      if (!countrySelect.value || !sourceSelect.value) {
+        return;
+      }
+
+      const destinations = [...new Set(
+        routes
+          .filter(route => route.country === countrySelect.value && route.source === sourceSelect.value)
+          .map(route => route.destination)
+      )];
+
+      for (const destination of destinations) {
+        addOption(destinationSelect, destination, destinationNames[destination]);
+      }
+      destinationSelect.disabled = destinations.length === 0;
+    }
+
+    function localDate(year, month, day) {
+      return new Date(year, month, day, 12);
+    }
+
+    function calculatePeriods(yearEndMonth, today, periodRule) {
+      const startMonth = (yearEndMonth + 1) % 12;
+      const startYear = periodRule === "current-financial-year"
+        ? today.getFullYear() - (startMonth > today.getMonth() ? 1 : 0)
+        : today.getFullYear() - 2;
+      const startDate = localDate(startYear, startMonth, 1);
+      const periods = [];
+      let periodStart = startDate;
+
+      while (periodStart <= today) {
+        const nextPeriodStart = localDate(
+          periodStart.getFullYear() + 1,
+          periodStart.getMonth(),
+          1
+        );
+        const normalPeriodEnd = localDate(
+          nextPeriodStart.getFullYear(),
+          nextPeriodStart.getMonth(),
+          0
+        );
+        const periodEnd = normalPeriodEnd > today ? today : normalPeriodEnd;
+
+        periods.push({ start: periodStart, end: periodEnd });
+        if (periodEnd.getTime() === today.getTime()) {
+          break;
+        }
+        periodStart = localDate(
+          periodEnd.getFullYear(),
+          periodEnd.getMonth(),
+          periodEnd.getDate() + 1
+        );
+      }
+
+      return { startDate, periods };
+    }
+
+    function showValidationError(missingFields) {
+      const labels = missingFields.map(field => field.labels[0].textContent.trim());
+      formError.textContent = `Complete the following fields: ${labels.join(", ")}.`;
+      formError.hidden = false;
+      for (const field of missingFields) {
+        field.setAttribute("aria-invalid", "true");
+      }
+      missingFields[0].focus();
+    }
+
+    countrySelect.addEventListener("change", updateSources);
+    sourceSelect.addEventListener("change", updateDestinations);
+    destinationSelect.addEventListener("change", clearMessagesAndResults);
+    monthSelect.addEventListener("change", clearMessagesAndResults);
+
+    form.addEventListener("submit", event => {
+      event.preventDefault();
+      clearMessagesAndResults();
+
+      const requiredFields = [countrySelect, sourceSelect, destinationSelect, monthSelect];
+      const missingFields = requiredFields.filter(field => !field.disabled && !field.value);
+      if (missingFields.length > 0) {
+        showValidationError(missingFields);
+        return;
+      }
+
+      const selectedRoute = routes.find(route =>
+        route.country === countrySelect.value &&
+        route.source === sourceSelect.value &&
+        route.destination === destinationSelect.value
+      );
+
+      if (!selectedRoute) {
+        formError.textContent = "That migration pathway is not available. Check your country and software selections.";
+        formError.hidden = false;
+        return;
+      }
+
+      const now = new Date();
+      const today = localDate(now.getFullYear(), now.getMonth(), now.getDate());
+      const { startDate, periods } = calculatePeriods(
+        Number(monthSelect.value),
+        today,
+        selectedRoute.periodRule
+      );
+      const destinationLabel = selectedRoute.destination === "quickbooks-online"
+        ? `QuickBooks Online (${selectedRoute.region})`
+        : `Exact Online (${selectedRoute.region})`;
+
+      document.getElementById("route-summary").textContent =
+        `${selectedRoute.source} to ${destinationLabel}${selectedRoute.periodRule === "current-financial-year" ? " - Current financial year only" : ""}`;
+      document.getElementById("as-of").textContent = `Calculated through ${dateFormatter.format(today)}`;
+      document.getElementById("total-range").textContent =
+        `${dateFormatter.format(startDate)} - ${dateFormatter.format(today)}`;
+
+      const periodList = document.getElementById("period-list");
+      periodList.replaceChildren();
+      periods.forEach((period, index) => {
+        const item = document.createElement("li");
+        const name = document.createElement("span");
+        const dates = document.createElement("span");
+        name.className = "period-name";
+        dates.className = "period-dates";
+        name.textContent = `Period ${index + 1}`;
+        dates.textContent = `${dateFormatter.format(period.start)} - ${dateFormatter.format(period.end)}`;
+        item.append(name, dates);
+        periodList.append(item);
+      });
+
+      results.hidden = false;
+      results.focus();
+    });
+  </script>
+</body>
+</html>
