@@ -282,6 +282,33 @@
       text-align: right;
     }
 
+    .migration-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 3rem;
+      margin-top: 1.25rem;
+      padding: 0.75rem 1.1rem;
+      border-radius: 9px;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      text-decoration: none;
+      transition: background-color 140ms ease, transform 140ms ease;
+    }
+
+    .migration-link:hover {
+      background: var(--accent-dark);
+    }
+
+    .migration-link:active {
+      transform: translateY(1px);
+    }
+
+    .migration-link:focus-visible {
+      outline: 3px solid rgba(8, 125, 120, 0.28);
+      outline-offset: 2px;
+    }
+
     .disclaimer {
       margin: 1.25rem 0 0;
       color: var(--muted);
@@ -419,6 +446,7 @@
 
       <h3 class="breakdown-heading">Financial periods included</h3>
       <ol class="period-list" id="period-list"></ol>
+      <a class="migration-link" id="migration-link" href="https://quickbooks.dataswitcher.com/">Continue to migration setup</a>
       <p class="disclaimer">This shows the default migration period only. It is not a price quote.</p>
     </section>
 
@@ -459,6 +487,10 @@
     const destinationNames = {
       "quickbooks-online": "QuickBooks Online",
       exact: "Exact"
+    };
+    const migrationUrls = {
+      "quickbooks-online": "https://quickbooks.dataswitcher.com/",
+      exact: "https://exact.dataswitcher.com/"
     };
 
     const form = document.getElementById("migration-form");
@@ -629,6 +661,9 @@
 
       document.getElementById("route-summary").textContent =
         `${selectedRoute.source} to ${destinationLabel}${selectedRoute.periodRule === "current-financial-year" ? " - Current financial year only" : ""}`;
+      const migrationLink = document.getElementById("migration-link");
+      migrationLink.href = migrationUrls[selectedRoute.destination];
+      migrationLink.textContent = "Continue to migration setup";
       document.getElementById("as-of").textContent = `Calculated through ${dateFormatter.format(today)}`;
       document.getElementById("total-range").textContent =
         `${dateFormatter.format(startDate)} - ${dateFormatter.format(today)}`;
